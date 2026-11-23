@@ -1,0 +1,4 @@
+interface:
+  display_name: "学科主线学习"
+  short_description: "围绕学科核心问题与解决主线梳理课程范围、标出基础枢纽重点，产出中文学习文档并配套测验巩固"
+  default_prompt: "Use $subject-learning to map the core problem, solution backbone, and key priorities of these course materials, write the Chinese learning document, and quiz me for retention."
