@@ -2,9 +2,9 @@
 
 English | [简体中文](README_zh.md)
 
-**Every discipline exists because a specific class of problems demanded it.** Most textbooks and lecture notes pile concepts bottom-up, chapter by chapter—leaving learners with isolated definitions and no map.
+Textbooks and lecture slides usually introduce concepts one chapter at a time, making it easy to memorize isolated definitions without seeing how the pieces fit together.
 
-`subject-learning` flips that order: it first pins down **why the subject exists** and the **solution backbone** behind it, then fills in concepts, methods, and exam-weighted details **top-down** only where they carry weight in that backbone—paired with an anti-sycophancy quiz loop that traces mistakes back to the backbone.
+`subject-learning` works in the opposite direction. It starts by identifying the core problem a discipline solves and the reasoning chain behind it, organizes the material into problem-based modules, and fills in concepts, methods, and exam-heavy topics in order of importance. Afterward, you can quiz yourself one question at a time with pre-locked grading criteria.
 
 ## Quickstart
 
@@ -21,14 +21,14 @@ Manual clone targets:
 - **Codex**: `git clone https://github.com/zyang0107/subject-learning ~/.codex/skills/subject-learning`
 - **Generic clients**: `git clone https://github.com/zyang0107/subject-learning .agents/skills/subject-learning`
 
-**Usage**: Run `/subject-learning` (or `$subject-learning`) with your source path (PDF, PPTX, DOCX, EPUB, or text — kept read-only), output directory, `mission`, and `depth` (`blueprint_only`, `outline`, or `full`). If `_notes/syllabus.md` already exists, it resumes from the current checkpoint or switches to quiz mode.
+**Usage**: Run `/subject-learning` (or `$subject-learning`) with your source path (PDF, PPTX, DOCX, EPUB, or text, kept read-only), output directory, `mission`, and `depth` (`blueprint_only`, `outline`, or `full`). When `_notes/syllabus.md` already exists in the output directory, the skill resumes from the last checkpoint or enters quiz mode.
 
 ## How It Works
 
-1. **Start from Why the Subject Exists ([`blueprint.md`](references/blueprint.md))**: Audit sources and exam exclusions, distill *Core Problem → Solution Backbone → Problem Modules*, rank foundational hubs and high-weight exam topics, and get user sign-off on a real sample before drafting.
-2. **Fill Top-Down ([`drafting.md`](references/drafting.md))**: Draft one module at a time (calibrated by a sample-chapter gate after Module 1). Every concept explains what gap on the backbone it solves, how it works, and where it breaks; abstractions require concrete examples verified by a reverse test.
-3. **Verify Structure ([`audit.py`](scripts/audit.py))**: Audit book-wide hub back-references and competing-approach tradeoffs, then run `audit.py` to enforce a single H1, exact H2 parity with `syllabus.md`, zero placeholders, and zero term drift (`terms.avoid`).
-4. **Quiz & Trace Breakpoints ([`practice.md`](references/practice.md))**: Ask 1 question per turn (L1 recall / L2 course exercises / L3 boundary transfer) with the rubric pre-locked in `_notes/quiz-key.md`; triage misses between memory slips and backbone comprehension breakpoints in `_notes/mistakes.md` on a `+2 → +5 → +10` schedule.
+1. **Map the backbone and priorities ([`blueprint.md`](references/blueprint.md))**: Inventories your materials and exam exclusions, extracts the core problem and solution chain, and groups topics into problem modules. Concepts that later modules rely on or that appear often in exercises are flagged as priorities, along with one sample section for your approval before full writing begins.
+2. **Draft module by module ([`drafting.md`](references/drafting.md))**: Writes one module at a time, with a review gate after the first core module to lock in tone and depth. Each major concept explains what gap it fills, how it works, and where it breaks down, backed by concrete examples and targeted web verification only when source gaps block the argument.
+3. **Check structure and terms ([`audit.py`](scripts/audit.py))**: Reviews cross-module consistency and runs `audit.py` to verify a single H1, exact heading parity with `syllabus.md`, no placeholders, and consistent terminology (`terms.avoid`).
+4. **Quiz and trace mistakes ([`practice.md`](references/practice.md))**: Presents one question at a time across three difficulty tiers (recall, course exercises, and edge-case transfer) while saving the answer key in `_notes/quiz-key.md` before grading. Memory slips are corrected directly, conceptual misses are traced back to the module's core problem, and mistakes return in `_notes/mistakes.md` on a `+2 -> +5 -> +10` spacing schedule.
 
 ## Output Layout
 

@@ -4,7 +4,10 @@
 
 ## 盘素材与读取
 
-按文件格式选择读取方式：PDF 用 `$pdf`，PPT 用 `$pptx`，DOCX 用 `$docx`，EPUB 用 `pandoc` 转纯文本，其余文本直接读。保持原文件只读。
+按文件格式选择本地读取方式（保持原文件只读，不依赖外部 Skill）：
+- Markdown / 纯文本：直接读取；
+- DOCX / PPTX / EPUB：用本地工具（如 `pandoc`）或 Python（`python-docx`/`python-pptx`，或直接用标准库 `zipfile` + `xml.etree.ElementTree` 提取内部文档文本）读取；
+- PDF：用客户端内置 PDF 读取能力或本地工具（如 `pdftotext`、`pypdf`、`pdfplumber`）提取；若为扫描版且当前环境无法 OCR/识图，在材料清单记为不可读并提示用户。
 
 素材较多时先浅扫全局，识别每份文件的材料角色与状态：
 - 角色参考：`大纲`、`学习目标`、`讲稿`、`PPT`、`教材`、`习题`、`考核`、`评分标准`、`反馈`、`行政/杂项`。

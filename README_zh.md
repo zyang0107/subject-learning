@@ -2,9 +2,9 @@
 
 [English](README.md) | 简体中文
 
-**一门学科之所以存在，是因为现实中有一类问题非它不可。** 多数教材和讲义按章节自下而上堆砌概念，读者学到一半只见零散定义，不见全貌。
+很多教材和讲义按章节平铺知识点，学到一半容易只记住零散定义，不知道整门课到底在解决什么问题。
 
-`subject-learning` 反过来——**先搞清楚这门学科为什么存在、到底要解决什么核心问题**，顺着解决主线搭出问题模块骨架，再**自上而下**把概念、方法与考点填进骨架对应的位置。最后配一套先锁判分标准的主动回忆测验，帮你定位到底卡在主线的哪一环。
+`subject-learning` 先厘清这门学科要解决的核心问题和推导主线，搭出按问题组织的模块骨架，再把概念、方法和高频考点填进对应的位置。文档写完后，还能直接做一题一判的主动回忆测验，帮你查出理解断在哪里。
 
 ## 快速上手
 
@@ -21,14 +21,14 @@ npx skills add zyang0107/subject-learning -g -y
 - **Codex**：`git clone https://github.com/zyang0107/subject-learning ~/.codex/skills/subject-learning`
 - **通用客户端**：`git clone https://github.com/zyang0107/subject-learning .agents/skills/subject-learning`
 
-**用法**：调用 `/subject-learning`（或 `$subject-learning`），提供素材路径（PDF/PPTX/DOCX/EPUB/文本，保持只读）、输出目录、学习目标（`mission`）与深度（`blueprint_only` 只出范围蓝图 / `outline` 精简骨架 / `full` 替代原书详尽版）。目标目录已有 `_notes/syllabus.md` 时自动断点续写或进入测验。
+**用法**：调用 `/subject-learning`（或 `$subject-learning`），提供素材路径（支持 PDF、PPTX、DOCX、EPUB 或文本，原文件保持只读）、输出目录、学习目标（`mission`）和深度（`blueprint_only` 只出范围蓝图、`outline` 精简骨架、`full` 替代原书的完整版本）。输出目录下已有 `_notes/syllabus.md` 时，会自动从断点续写或进入测验。
 
 ## 怎么工作
 
-1. **先立主线，再定范围（[`blueprint.md`](references/blueprint.md)）**：盘点素材与考核排除项，提炼「核心问题 → 解决主线 → 问题模块」，标出跨模块复用的**基础枢纽**与**考核高频**，附 1 个真实样例报你拍板后才动笔。
-2. **自上而下填肉（[`drafting.md`](references/drafting.md)）**：每次只写一个模块（首章过样章门校准手感）。每个概念必须讲清它在主线上解决什么问题、怎么运作、边界在哪；先跑主干再叠例外，抽象概念配可反向检验的具体例子，不缺则不外部乱搜。
-3. **脚本硬检交付（[`audit.py`](scripts/audit.py)）**：全书核对基础枢纽回指与竞争方案取舍，最后跑脚本校验单 H1、章节目录与 `syllabus.md` 逐字一致、无占位符、无术语漂移（`terms.avoid`）。
-4. **测验与主线诊断（[`practice.md`](references/practice.md)）**：每次 1 题（L1 基础 / L2 原题应用 / L3 边界迁移），发题前先把答案与得分点锁入 `_notes/quiz-key.md` 防放水；答错按「记混」与「卡在主线哪一环」分流，以 `+2 → +5 → +10` 间隔复测。
+1. **先立主线，再定重点（[`blueprint.md`](references/blueprint.md)）**：盘点素材并梳理考核范围与排除项，提炼出核心问题、解决主线和问题模块。后续反复用到的基础概念以及习题常考内容会优先标为重点，同时写好一个真实样例交给你确认，拍板后再动笔。
+2. **逐模块撰写（[`drafting.md`](references/drafting.md)）**：每次只写一个模块，写完首个核心模块先停下来过样章，校准深度和写法。每个要点一次讲清它解决什么问题、怎么运作以及适用边界，先跑通主干再补充例外，并给抽象概念配上可验证的具体例子；只有遇到阻断理解的缺口时，才联网核查权威资料。
+3. **校验与交付（[`audit.py`](scripts/audit.py)）**：通篇检查基础概念的回指与不同流派的取舍对比，最后运行 `audit.py`，确保标题结构与 `syllabus.md` 完全对齐，且正文没有遗留占位符或术语混用（`terms.avoid`）。
+4. **测验与诊断（[`practice.md`](references/practice.md)）**：每次只出一道题，覆盖基础回忆、课程原题应用和边界迁移三种难度，并在发题前把参考答案和得分点先写入 `_notes/quiz-key.md`，避免批改时顺从放水。答错后区分记忆遗漏和理解偏差，理解偏差会退回学科主线指出卡点，并按 `+2 -> +5 -> +10` 的间隔安排复测。
 
 ## 产出结构
 
