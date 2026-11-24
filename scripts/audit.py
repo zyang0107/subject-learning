@@ -15,16 +15,9 @@ FENCE_RE = re.compile(r"^(?:`{3,}|~{3,})")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
 
 REQUIRED_NOTES = ("plan.md",)
-OPTIONAL_NOTES = ("quiz.md", "quiz-key.md")
-PLAN_H2_GROUPS = (
-    ("学习定位与要求", "核心口径与前置"),
-    ("模块主线与重点", "模块主线与重点定位"),
-    ("写作偏好与素材缺口",),
-)
-MAP_H2_GROUPS = (
-    ("全书导览", "学科定位与全书地图"),
-    ("重点与学习范围",),
-)
+OPTIONAL_NOTES = ("quiz.md",)
+PLAN_H2S = ("学习定位与要求", "模块主线与重点", "写作偏好与素材缺口")
+MAP_H2S = ("全书导览", "重点与学习范围")
 
 
 def fail(message: str) -> None:
@@ -136,35 +129,25 @@ def check_markdown(path: Path, errors: list[str]) -> list[str]:
     return h2_titles
 
 
-def resolve_notes_dir(book: Path) -> Path:
-    """Prefer notes/ and fall back to legacy _notes/ when present."""
-    notes = book / "notes"
-    if notes.is_dir():
-        return notes
-    legacy = book / "_notes"
-    if legacy.is_dir():
-        return legacy
-    return notes
-
-
-def check_notes(notes: Path, errors: list[str]) -> None:
+def check_notes(book: Path, errors: list[str]) -> None:
     """notes/ holds plan.md (plus optional quiz.md) and plan.md has its 3 H2s."""
+    notes = book / "notes"
     if not notes.is_dir():
         fail(f"missing directory: {notes}")
     found = {p.name for p in notes.iterdir() if p.is_file() and not p.name.startswith(".")}
     allowed = set(REQUIRED_NOTES) | set(OPTIONAL_NOTES)
     for extra in sorted(found - allowed):
-        errors.append(f"{notes.name}/{extra}: unexpected file in {notes.name}/")
+        errors.append(f"notes/{extra}: unexpected file in notes/")
     for missing in sorted(set(REQUIRED_NOTES) - found):
-        errors.append(f"missing file: {notes.name}/{missing}")
+        errors.append(f"missing file: notes/{missing}")
 
     plan = notes / "plan.md"
     if plan.is_file():
         body = FRONT_MATTER_RE.sub("", plan.read_text(encoding="utf-8"))
         present = set(re.findall(r"^##\s+(.*?)\s*$", body, re.M))
-        for names in PLAN_H2_GROUPS:
-            if not any(name in present for name in names):
-                errors.append(f"plan.md has no `## {names[0]}`")
+        for name in PLAN_H2S:
+            if name not in present:
+                errors.append(f"plan.md has no `## {name}`")
 
 
 def check_outline(titles: list[str], headings: list[str], errors: list[str]) -> None:
@@ -192,18 +175,16 @@ def resolve_body(book: Path, block: str) -> Path:
 
 def validate(book: Path) -> int:
     errors: list[str] = []
-    notes = resolve_notes_dir(book)
-    block = read_front_matter(notes / "plan.md")
+    block = read_front_matter(book / "notes" / "plan.md")
 
-    map_state = scalar(block, "map") or scalar(block, "blueprint")
-    if map_state != "approved":
+    if scalar(block, "map") != "approved":
         errors.append("map is not approved")
 
-    doc_state = scalar(block, "status") or scalar(block, "book")
-    if doc_state not in ("in_progress", "complete", "map", "blueprint_only"):
+    doc_state = scalar(block, "status")
+    if doc_state not in ("in_progress", "complete"):
         errors.append(f"status has no legal value: {doc_state!r}")
 
-    check_notes(notes, errors)
+    check_notes(book, errors)
 
     body = resolve_body(book, block)
     headings: list[str] = []
@@ -212,15 +193,10 @@ def validate(book: Path) -> int:
     else:
         errors.append(f"missing file: {body.name}")
 
-    is_map_only = (
-        scalar(block, "mode") == "map"
-        or scalar(block, "depth") == "blueprint_only"
-        or doc_state in ("map", "blueprint_only")
-    )
-    if is_map_only:
-        for names in MAP_H2_GROUPS:
-            if not any(name in headings for name in names):
-                errors.append(f"map deliverable missing `## {names[0]}`")
+    if scalar(block, "mode") == "map":
+        for name in MAP_H2S:
+            if name not in headings:
+                errors.append(f"map deliverable missing `## {name}`")
         if errors:
             for error in errors:
                 print(f"- {error}", file=sys.stderr)
