@@ -32,7 +32,7 @@ description: 按学科核心问题与解决主线整理课程或教材，覆盖�
 
 ## 阶段一 · 定框架与标重点（`map` 与 `guide` 共用）
 
-读取 `references/map.md`（`guide` 模式写样例时一并读取 `references/style.md`），完成以下动作：
+读取 `references/map.md`（`guide` 模式写样例或 `map` 模式输出导图时一并读取 `references/style.md`），完成以下动作：
 1. 整理素材与考核要求，提炼核心问题、解决主线、研究边界与前置知识，划出问题模块并按「枢纽 / 重点 / 常规 / 带过」分级，写入 `_notes/plan.md`（`map: pending`、`status: in_progress`）。
 2. 将范围与重点清单（`guide` 模式附 1 个常规要点样例）一次发给用户确认；获批后置 `map: approved` 并写入最终分级与写作偏好。
 3. 若为 `mode: map`，按 `map.md` 写出 `<主题目录名>.md`，运行 `audit.py` 通过后置 `status: complete` 结束。
