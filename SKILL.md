@@ -1,104 +1,97 @@
 ---
 name: subject-learning
-description: 围绕学科核心问题与解决主线，梳理课程/教材的范围、考核口径与基础枢纽重点，产出可替代原书的中文学习文档，并支持配套测验巩固。用户提供课件、讲稿、大纲、习题或教材，要求整理重点范围、编写系统学习文档或进行学后测验时使用。
+description: 按学科核心问题与解决主线整理课程或教材，覆盖范围框架、主线讲义、习题册与错题测验。当用户提供课件、讲稿、大纲、习题或教材，要求划定重点框架、编写主线学习讲义或进行测验复习时使用。
 ---
 
 # 入口
 
-每次调用先检查用户指定的主题目录下是否已有 `_notes/plan.md` 且 `skill: subject-learning`：
+每次调用先检查输出主题目录下是否已有 `_notes/plan.md`：
 
-**接手**：读 `_notes/plan.md` 的 front matter，按优先级从上到下匹配动作：
+**继续已有任务**：读 `_notes/plan.md` 的 front matter，按顺序匹配第一条成立的动作：
 
 | 状态 | 动作 |
 | --- | --- |
-| 用户要求测验 / 刷题 / 复测错题 | 直接进入「按需分支 · 测验与巩固」（若连素材都未盘点，先按新建走阶段一） |
-| `blueprint: pending` | 若 `_notes/plan.md` 三节齐全，从阶段一第 4 步报用户开始；否则从第 1 步开始 |
-| `depth: blueprint_only` 且 `blueprint: approved` | 蓝图已交付；问用户是否升级写书。确认升级后更新 `depth`（`outline`/`full`）、置 `book: in_progress` 并补齐 `sections` 进入阶段二（无样例时以首个问题模块的样章门定手感） |
+| 用户要求出习题册 / 刷题 / 测验 / 复习错题 | 进入「测验与复习」（若尚未整理素材，先按新任务走阶段一） |
+| `map: pending` | 若 `_notes/plan.md` 三节齐全，直接做阶段一确认；否则从头跑阶段一 |
+| `mode: map` 且 `map: approved` 且 `status: in_progress` | 按 `references/map.md` 输出框架文档 `<主题目录名>.md`，通过 `audit.py` 后置 `status: complete` |
+| `mode: map` 且 `map: approved` 且 `status: complete` | 告知框架已完成，询问是否升级写成学习讲义；确认后改为 `mode: guide`、`status: in_progress` 并补齐 `sections` 进入阶段二 |
 | 有板块为 `stale` | 先回改该板块 |
-| 有板块为 `review` | 把该板块交给用户过样章门 |
+| 有板块为 `review` | 发给用户做样章确认 |
 | 有板块为 `pending` | 写第一个 `pending` 板块 |
-| 全部 `done` 且 `book` 非 `complete` | 进入阶段三终审交付 |
+| 全部 `done` 且 `status` 非 `complete` | 进入阶段三通篇检查与完成 |
 
-**新建**：一次向用户问清尚未提供的 4 项信息：
+**开始新任务**：一次向用户问清尚未提供的 4 项信息：
 1. 素材目录或文件路径；
-2. 输出主题目录（落点路径）；
+2. 输出目录；
 3. `mission`（学习目标：为什么学、学完想解决什么问题）；
-4. `depth`（`blueprint_only` 只出范围与重点蓝图 / `outline` 精简骨架版 / `full` 替代原书详尽版）。
+4. `mode`（`map` 只出框架：导览图与重点清单 / `guide` 学习讲义：默认项，在框架基础上写成主线学习文档）。
+
+无论选 `map` 还是 `guide`，都必须先走完**阶段一**定好框架；`map` 在框架确认后输出结束，`guide` 沿用同一框架继续走阶段二。
 
 # 工作流
 
-## 阶段一 · 定主线与标重点（蓝图）
+## 阶段一 · 定框架与标重点（`map` 与 `guide` 共用）
 
-本阶段仅读取 `references/blueprint.md`。
+读取 `references/map.md`（`guide` 模式写样例时一并读取 `references/style.md`），完成以下动作：
+1. 整理素材与考核要求，提炼核心问题、解决主线、研究边界与前置知识，划出问题模块并按「枢纽 / 重点 / 常规 / 带过」分级，写入 `_notes/plan.md`（`map: pending`、`status: in_progress`）。
+2. 将范围与重点清单（`guide` 模式附 1 个常规要点样例）一次发给用户确认；获批后置 `map: approved` 并写入最终分级与写作偏好。
+3. 若为 `mode: map`，按 `map.md` 写出 `<主题目录名>.md`，运行 `audit.py` 通过后置 `status: complete` 结束。
 
-1. **盘素材与抓口径**：扫清可用素材与不可读/缺漏文件（保持原文件只读，无需登记行政杂项）；提取大纲、考核、评分标准、练习与反馈中的难度要求及明确不考项。
-2. **定主线与标重点**：提炼核心问题、解决主线、研究边界与前置知识，顺主线划分问题模块（原课程顺序契合主线时直接沿用，零散或倒置时按问题逻辑重排），标出各模块的**基础枢纽**与**考核高频**重点及原题位置。
-3. **落盘账本**：创建输出目录，写入 `_notes/plan.md`（`blueprint: pending`，记录 `source`、前置知识、口径、分模块重点定位及 `sections`）。本阶段只记决策与来源定位，正文细节留待阶段二精读原文直接成文。
-4. **报用户拍板**：一次报齐四样——① 核心问题、解决主线、考核口径与明确不考项；② 前置知识；③ 问题模块与重点清单（附基础枢纽/考核权重依据，默认分「重点 / 常规 / 带过」请用户调整）；④ 按所选 `depth` 真写出来的 1 个常规要点样例（`blueprint_only` 模式免写样例）。
-5. **批准蓝图**：用户确认后将 `blueprint` 置 `approved`，回填最终分档并把样例写入 `_notes/plan.md`「写作偏好」。若 `depth: blueprint_only`，直接将面向读者的蓝图写入 `<主题目录名>.md`（含 `## 学科定位与全书地图` 与 `## 重点与学习范围`），置 `book: blueprint_only` 并跑 `audit.py` 交付结束。
+**完成标准**：`_notes/plan.md` 固定三节齐全，前置知识、考核排除项、模块结构与四档重点均已获用户确认（`mode: map` 还需通过 `audit.py`）。
 
-**完成标准**：`_notes/plan.md` 三节齐全；前置知识、考核排除项与重点分档已获用户确认。
+## 阶段二 · 按问题模块写讲义（`guide` 模式）
 
-## 阶段二 · 按问题模块成文
+读取 `references/guide.md` 与 `references/style.md`，每次只写一个板块：
+1. 开写前核对正文目录与上节结尾（保留用户手工修改，半截板块整块重写），精读本板块原始素材，核对前置概念均已讲过，重读 `_notes/plan.md`「写作偏好」。
+2. 按 `guide.md` 写法与 `style.md` 风格写完本板块，满足单板块完成标准后置 `done`。
+3. **样章确认**：首个正式问题模块写完置 `review`，交用户审 4 件事（开场是否切中真实问题、要点衔接是否顺畅、深浅与例子是否合适、收尾是否自然）；将反馈记入「写作偏好」，确认后置 `done`。
+4. **结构调整**：模块内拆合先改 `_notes/plan.md` 再改正文；增删模块或调整依赖关系时停下来向用户说明冲突，并将受影响的已完成模块置 `stale`。
 
-本阶段仅读取 `references/drafting.md`。
+**完成标准**：本板块满足 `guide.md` 全部写法要求，与 `_notes/plan.md` 标题、术语和前置依赖完全一致。
 
-每次只写一个板块。开写前完成 4 件事：
-1. 核对正文 H2 目录与上一板块结尾，保留用户跨会话的手工修改；正文里留有半截的板块整块重写。
-2. 按 `_notes/plan.md` 的 `source` 与来源定位，精读本板块常规/重点要点的原始素材并直接用于成文；遇阻断后文的解释断点，按 `drafting.md` 定向查证并将新增来源/缺口补记回 `_notes/plan.md`。
-3. 核对本板块依赖的前置概念均已由前置知识或更早板块交付；若缺失，先调整结构再动笔。
-4. 重读一遍 `_notes/plan.md`「写作偏好」中的样例与样章反馈。
+## 阶段三 · 通篇检查与完成（`guide` 模式）
 
-问题模块通过 `drafting.md`「板块级硬检」全部 6 条后置 `done`；首尾固定 2 节（`学科定位与全书地图`、`考前速查与自检`）按 `drafting.md` 交付标准核对后置 `done`。
+全部 `sections` 置 `done` 后执行：
+1. 通篇核对：枢纽概念首次讲透、后续点名衔接；竞争方案前提与取舍清晰；要点无跨节重复展开；首尾固定节与正文及 `terms` 一致。
+2. 运行校验：`python3 "<skill-dir>/scripts/audit.py" "<主题目录>"`（`<skill-dir>` 为本 `SKILL.md` 所在目录的绝对路径）。
 
-**样章门**：第一个正式问题模块写完置 `review`，交给用户审 4 件事：开场是否切中真实问题、要点之间衔接是否顺畅、深度与例子是否合适、收尾是否自然引向下一板块。将反馈写入「写作偏好」，用户点头后置 `done`。
+**完成标准**：通篇核对与 `audit.py` 全部通过 → `status` 置 `complete`。
 
-**结构调整**：模块内拆合可先改 `_notes/plan.md` 再动正文；增删模块或调整模块依赖时，停下来向用户报冲突，并将受影响的已完成模块置 `stale`。
+## 测验与复习
 
-## 阶段三 · 终审交付
-
-全部 `sections` 均为 `done` 后执行：
-1. **全书级核对**：基础枢纽在首次出现时讲透并在后续模块显式回指；竞争方案讲清各自前提与取舍；同一要点不在两处重复展开；`学科定位与全书地图`、`考前速查与自检` 与正文及术语保持一致。
-2. **脚本校验**：运行 `python3 "<skill-dir>/scripts/audit.py" "<主题目录>"`（`<skill-dir>` 为本 `SKILL.md` 所在目录的绝对路径）。
-
-**完成标准**：全书级核对与 `audit.py` 全部通过 → `book` 置 `complete`。
-
-## 按需分支 · 测验与巩固
-
-任意模块完成后，或全书读完、需要针对某模块/错题本检验掌握程度时触发。本分支仅读取 `references/practice.md`。
-
-1. 确定测验范围（刚学完的模块 / 指定重点 / 全书综合 / 错题重测）；每次只出 1 题，总轮数按模块难度与重点密度弹性调整，每过几轮穿插 1 道最久未复测的错题。
-2. 出题前先将本轮参考答案与可核验得分点落盘至 `_notes/quiz-key.md`，对话中只呈现题目与来源标注（原题 / AI 自拟），等待用户作答。
-3. 用户作答后，先重读 `_notes/quiz-key.md` 逐点严格判分；再按错因分流（记忆性错误直接纠偏；理解性错误退回 `_notes/plan.md` 的核心问题与解决主线定位认知断点），将错题记入 `<主题目录名>-错题本.md`。
+读取 `references/practice.md`，执行：
+1. 若目录下尚无 `<主题目录名>-习题册.md`，先按 `practice.md` 的覆盖配额与三类题型标准生成完整习题册（含全部答案与得分要点）。
+2. 对话测验时先读 `_notes/quiz.md`（无则新建），确认范围与模式（`顺序刷` / `打乱刷` / `只看错题`），每次出 1 题并更新指针；用户作答后对照习题册答案判分，将结果与错因记入 `_notes/quiz.md`，错题同步记入 `<主题目录名>-错题本.md`。
+3. 一轮结束后依据 `_notes/quiz.md` 做测后回顾，对薄弱模块按原标准补充难度略低的专项题，直接并入习题册对应模块。
 
 # 输出格式
 
 ```text
 <主题目录>/
-├── <主题目录名>.md          # 唯一正文（blueprint_only 模式为蓝图版；outline/full 为完整学习文档）
-├── <主题目录名>-错题本.md    # 按需生成：错题、主线认知断点与三态复测进度（面向学习者复盘）
+├── <主题目录名>.md          # 唯一正文（map 为框架版；guide 为主线学习讲义）
+├── <主题目录名>-习题册.md    # 按需生成：分模块题库、参考答案与得分要点（含专项补题）
+├── <主题目录名>-错题本.md    # 按需生成：面向读者复盘的错题、主线纠偏与复习状态
 └── _notes/
-    ├── plan.md              # 单源工作账本：YAML front matter + 固定三节 H2（见 references/blueprint.md）
-    └── quiz-key.md          # 按需生成：当前测验题的预设判分要点（防顺从判对）
+    ├── plan.md              # 规划与进度：YAML front matter + 固定三节 H2（模板见 references/map.md）
+    └── quiz.md              # 按需生成：做题指针、分模块对错统计与用户错因（不放答案）
 ```
 
-`_notes/plan.md` 标准 YAML front matter（`sections` 固定为 `学科定位与全书地图` + 各问题模块 + `考前速查与自检`，与正文 H2 同名同序；`terms` 可选，供 `audit.py` 检查易混术语漂移）：
+`_notes/plan.md` 标准 YAML front matter（`guide` 模式的 `sections` 固定为 `全书导览` + 各问题模块 + `全书速查与自测`，与正文 H2 同名同序；`map` 模式可省略 `sections`；`terms` 可选，供 `audit.py` 拦截术语漂移）：
 
 ```yaml
 ---
-skill: subject-learning
 topic: <主题名>
 source: <素材目录或文件路径>
 mission: <学习目标>
-depth: full # blueprint_only | outline | full
-blueprint: pending # pending | approved
-book: in_progress # in_progress | complete | blueprint_only
+mode: guide # map | guide
+map: pending # pending | approved
+status: in_progress # in_progress | complete
 sections:
-  - title: 学科定位与全书地图
+  - title: 全书导览
     status: pending # pending | review | done | stale
   - title: <问题模块标题>
     status: pending
-  - title: 考前速查与自检
+  - title: 全书速查与自测
     status: pending
 terms:
   - zh: <规范中文译名>

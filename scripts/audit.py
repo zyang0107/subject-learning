@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a subject-learning directory (blueprint_only or single-file book)."""
+"""Validate a subject-learning directory (map or single-file guide)."""
 
 from __future__ import annotations
 
@@ -15,15 +15,15 @@ FENCE_RE = re.compile(r"^(?:`{3,}|~{3,})")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
 
 REQUIRED_NOTES = ("plan.md",)
-OPTIONAL_NOTES = ("quiz-key.md",)
-PLAN_H2 = (
-    "核心口径与前置",
-    "模块主线与重点定位",
-    "写作偏好与素材缺口",
+OPTIONAL_NOTES = ("quiz.md", "quiz-key.md")
+PLAN_H2_GROUPS = (
+    ("学习定位与要求", "核心口径与前置"),
+    ("模块主线与重点", "模块主线与重点定位"),
+    ("写作偏好与素材缺口",),
 )
-BLUEPRINT_H2 = (
-    "学科定位与全书地图",
-    "重点与学习范围",
+MAP_H2_GROUPS = (
+    ("全书导览", "学科定位与全书地图"),
+    ("重点与学习范围",),
 )
 
 
@@ -137,7 +137,7 @@ def check_markdown(path: Path, errors: list[str]) -> list[str]:
 
 
 def check_notes(book: Path, errors: list[str]) -> None:
-    """_notes/ holds plan.md (plus optional quiz-key.md) and plan.md has its 3 H2s."""
+    """_notes/ holds plan.md (plus optional quiz.md) and plan.md has its 3 H2s."""
     notes = book / "_notes"
     if not notes.is_dir():
         fail(f"missing directory: {notes}")
@@ -152,9 +152,9 @@ def check_notes(book: Path, errors: list[str]) -> None:
     if plan.is_file():
         body = FRONT_MATTER_RE.sub("", plan.read_text(encoding="utf-8"))
         present = set(re.findall(r"^##\s+(.*?)\s*$", body, re.M))
-        for name in PLAN_H2:
-            if name not in present:
-                errors.append(f"plan.md has no `## {name}`")
+        for names in PLAN_H2_GROUPS:
+            if not any(name in present for name in names):
+                errors.append(f"plan.md has no `## {names[0]}`")
 
 
 def check_outline(titles: list[str], headings: list[str], errors: list[str]) -> None:
@@ -184,14 +184,13 @@ def validate(book: Path) -> int:
     errors: list[str] = []
     block = read_front_matter(book / "_notes" / "plan.md")
 
-    if scalar(block, "skill") != "subject-learning":
-        fail("plan.md is not a subject-learning artefact")
-    if scalar(block, "blueprint") != "approved":
-        errors.append("blueprint is not approved")
+    map_state = scalar(block, "map") or scalar(block, "blueprint")
+    if map_state != "approved":
+        errors.append("map is not approved")
 
-    book_state = scalar(block, "book")
-    if book_state not in ("in_progress", "complete", "blueprint_only"):
-        errors.append(f"book has no legal value: {book_state!r}")
+    doc_state = scalar(block, "status") or scalar(block, "book")
+    if doc_state not in ("in_progress", "complete", "map", "blueprint_only"):
+        errors.append(f"status has no legal value: {doc_state!r}")
 
     check_notes(book, errors)
 
@@ -202,15 +201,20 @@ def validate(book: Path) -> int:
     else:
         errors.append(f"missing file: {body.name}")
 
-    if book_state == "blueprint_only" or scalar(block, "depth") == "blueprint_only":
-        for required_h2 in BLUEPRINT_H2:
-            if required_h2 not in headings:
-                errors.append(f"blueprint deliverable missing `## {required_h2}`")
+    is_map_only = (
+        scalar(block, "mode") == "map"
+        or scalar(block, "depth") == "blueprint_only"
+        or doc_state in ("map", "blueprint_only")
+    )
+    if is_map_only:
+        for names in MAP_H2_GROUPS:
+            if not any(name in headings for name in names):
+                errors.append(f"map deliverable missing `## {names[0]}`")
         if errors:
             for error in errors:
                 print(f"- {error}", file=sys.stderr)
             return 1
-        print(f"OK: blueprint_only validated ({body.name})")
+        print(f"OK: map validated ({body.name})")
         return 0
 
     entries = sections(block)
