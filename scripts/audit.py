@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a subject-learning directory (blueprint-only or single-file book)."""
+"""Validate a subject-learning directory (blueprint_only or single-file book)."""
 
 from __future__ import annotations
 
@@ -14,13 +14,16 @@ FRONT_MATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
 FENCE_RE = re.compile(r"^(?:`{3,}|~{3,})")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
 
-REQUIRED_NOTES = ("structure.md", "syllabus.md")
-OPTIONAL_NOTES = ("mistakes.md", "quiz-key.md")
-STRUCTURE_H2 = (
-    "核心问题与课程口径",
-    "问题主线与模块划分",
-    "重点清单与素材定位",
-    "材料清单与缺口",
+REQUIRED_NOTES = ("plan.md",)
+OPTIONAL_NOTES = ("quiz-key.md",)
+PLAN_H2 = (
+    "核心口径与前置",
+    "模块主线与重点定位",
+    "写作偏好与素材缺口",
+)
+BLUEPRINT_H2 = (
+    "学科定位与全书地图",
+    "重点与学习范围",
 )
 
 
@@ -134,7 +137,7 @@ def check_markdown(path: Path, errors: list[str]) -> list[str]:
 
 
 def check_notes(book: Path, errors: list[str]) -> None:
-    """_notes/ holds required files (plus optional practice notes) and structure.md its 4 H2s."""
+    """_notes/ holds plan.md (plus optional quiz-key.md) and plan.md has its 3 H2s."""
     notes = book / "_notes"
     if not notes.is_dir():
         fail(f"missing directory: {notes}")
@@ -145,33 +148,44 @@ def check_notes(book: Path, errors: list[str]) -> None:
     for missing in sorted(set(REQUIRED_NOTES) - found):
         errors.append(f"missing file: _notes/{missing}")
 
-    structure = notes / "structure.md"
-    if structure.is_file():
-        text = structure.read_text(encoding="utf-8")
-        present = set(re.findall(r"^##\s+(.*?)\s*$", text, re.M))
-        for name in STRUCTURE_H2:
+    plan = notes / "plan.md"
+    if plan.is_file():
+        body = FRONT_MATTER_RE.sub("", plan.read_text(encoding="utf-8"))
+        present = set(re.findall(r"^##\s+(.*?)\s*$", body, re.M))
+        for name in PLAN_H2:
             if name not in present:
-                errors.append(f"structure.md has no `## {name}`")
+                errors.append(f"plan.md has no `## {name}`")
 
 
 def check_outline(titles: list[str], headings: list[str], errors: list[str]) -> None:
-    """syllabus sections and body H2 headings must be the same list, same order."""
+    """plan sections and body H2 headings must be the same list, same order."""
     for title in titles:
         if title not in headings:
-            errors.append(f"syllabus section {title!r} has no matching H2 in the body")
+            errors.append(f"plan section {title!r} has no matching H2 in the body")
     for heading in headings:
         if heading not in titles:
-            errors.append(f"body H2 {heading!r} is not listed in syllabus sections")
+            errors.append(f"body H2 {heading!r} is not listed in plan sections")
     if titles != headings and sorted(titles) == sorted(headings):
-        errors.append("syllabus section order does not match body H2 order")
+        errors.append("plan section order does not match body H2 order")
+
+
+def resolve_body(book: Path, block: str) -> Path:
+    body = book / (book.name + ".md")
+    if not body.is_file():
+        topic = scalar(block, "topic")
+        if topic:
+            fallback = book / (topic + ".md")
+            if fallback.is_file():
+                return fallback
+    return body
 
 
 def validate(book: Path) -> int:
     errors: list[str] = []
-    block = read_front_matter(book / "_notes" / "syllabus.md")
+    block = read_front_matter(book / "_notes" / "plan.md")
 
     if scalar(block, "skill") != "subject-learning":
-        fail("syllabus.md is not a subject-learning artefact")
+        fail("plan.md is not a subject-learning artefact")
     if scalar(block, "blueprint") != "approved":
         errors.append("blueprint is not approved")
 
@@ -181,37 +195,33 @@ def validate(book: Path) -> int:
 
     check_notes(book, errors)
 
+    body = resolve_body(book, block)
+    headings: list[str] = []
+    if body.is_file():
+        headings = check_markdown(body, errors)
+    else:
+        errors.append(f"missing file: {body.name}")
+
     if book_state == "blueprint_only" or scalar(block, "depth") == "blueprint_only":
+        for required_h2 in BLUEPRINT_H2:
+            if required_h2 not in headings:
+                errors.append(f"blueprint deliverable missing `## {required_h2}`")
         if errors:
             for error in errors:
                 print(f"- {error}", file=sys.stderr)
             return 1
-        print("OK: blueprint_only validated")
+        print(f"OK: blueprint_only validated ({body.name})")
         return 0
 
     entries = sections(block)
     if not entries:
-        errors.append("syllabus lists no sections")
+        errors.append("plan lists no sections")
     for number, entry in enumerate(entries, 1):
         label = entry.get("title") or f"#{number}"
         if not entry.get("title"):
             errors.append(f"section {label}: missing title field")
         if entry.get("status") != "done":
             errors.append(f"section {label}: status {entry.get('status')!r}")
-
-    body = book / (book.name + ".md")
-    if not body.is_file():
-        topic = scalar(block, "topic")
-        if topic:
-            fallback = book / (topic + ".md")
-            if fallback.is_file():
-                body = fallback
-
-    headings: list[str] = []
-    if body.is_file():
-        headings = check_markdown(body, errors)
-    else:
-        errors.append(f"missing file: {body.name}")
 
     titles = [entry["title"] for entry in entries if entry.get("title")]
     if titles and headings:
