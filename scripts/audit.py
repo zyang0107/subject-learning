@@ -136,17 +136,27 @@ def check_markdown(path: Path, errors: list[str]) -> list[str]:
     return h2_titles
 
 
-def check_notes(book: Path, errors: list[str]) -> None:
-    """_notes/ holds plan.md (plus optional quiz.md) and plan.md has its 3 H2s."""
-    notes = book / "_notes"
+def resolve_notes_dir(book: Path) -> Path:
+    """Prefer notes/ and fall back to legacy _notes/ when present."""
+    notes = book / "notes"
+    if notes.is_dir():
+        return notes
+    legacy = book / "_notes"
+    if legacy.is_dir():
+        return legacy
+    return notes
+
+
+def check_notes(notes: Path, errors: list[str]) -> None:
+    """notes/ holds plan.md (plus optional quiz.md) and plan.md has its 3 H2s."""
     if not notes.is_dir():
         fail(f"missing directory: {notes}")
     found = {p.name for p in notes.iterdir() if p.is_file() and not p.name.startswith(".")}
     allowed = set(REQUIRED_NOTES) | set(OPTIONAL_NOTES)
     for extra in sorted(found - allowed):
-        errors.append(f"_notes/{extra}: unexpected file in _notes/")
+        errors.append(f"{notes.name}/{extra}: unexpected file in {notes.name}/")
     for missing in sorted(set(REQUIRED_NOTES) - found):
-        errors.append(f"missing file: _notes/{missing}")
+        errors.append(f"missing file: {notes.name}/{missing}")
 
     plan = notes / "plan.md"
     if plan.is_file():
@@ -182,7 +192,8 @@ def resolve_body(book: Path, block: str) -> Path:
 
 def validate(book: Path) -> int:
     errors: list[str] = []
-    block = read_front_matter(book / "_notes" / "plan.md")
+    notes = resolve_notes_dir(book)
+    block = read_front_matter(notes / "plan.md")
 
     map_state = scalar(block, "map") or scalar(block, "blueprint")
     if map_state != "approved":
@@ -192,7 +203,7 @@ def validate(book: Path) -> int:
     if doc_state not in ("in_progress", "complete", "map", "blueprint_only"):
         errors.append(f"status has no legal value: {doc_state!r}")
 
-    check_notes(book, errors)
+    check_notes(notes, errors)
 
     body = resolve_body(book, block)
     headings: list[str] = []
